@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Conversion Complete - ClipVerse</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="background"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="{{ url_for('home') }}" class="logo">
+            <div class="logo-icon">▶</div>
+            <span>ClipVerse</span>
+        </a>
+    </nav>
+
+
+    <!-- Result Page -->
+    <main class="result-page">
+
+        <div class="result-card">
+
+            <div class="success-icon">✓</div>
+
+            <h1>Conversion Complete!</h1>
+
+            <p class="result-message">
+                Your media has been successfully converted.
+            </p>
+
+
+            <!-- File Information -->
+            <div class="file-info">
+
+                <div class="info-row">
+                    <span>📄 Original File</span>
+
+                    <strong>
+                        {{ original_name }}
+                    </strong>
+                </div>
+
+
+                <div class="info-row">
+                    <span>🎯 Format</span>
+
+                    <strong>
+                        {{ output_format }}
+                    </strong>
+                </div>
+
+
+                {% if output_format == "MP4" %}
+
+                <div class="info-row">
+                    <span>📺 Quality</span>
+
+                    <strong>
+                        {{ quality }}
+                    </strong>
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- Download Button -->
+            <a
+                href="{{ url_for('download', filename=filename) }}"
+                class="download-button"
+            >
+                ⬇ Download {{ output_format }}
+            </a>
+
+
+            <!-- Convert Another -->
+            <a
+                href="{{ url_for('home') }}"
+                class="secondary-button"
+            >
+                🔄 Convert Another File
+            </a>
+
+
+            <!-- Delete File -->
+            <a
+                href="{{ url_for('delete_file', filename=filename) }}"
+                class="delete-link"
+            >
+                Delete this file from server
+            </a>
+
+        </div>
+
+    </main>
+
+
+    <!-- Footer -->
+    <footer>
+
+        <div class="footer-logo">
+            ▶ ClipVerse
+        </div>
+
+        <p>
+            © 2026 ClipVerse. Free media conversion.
+        </p>
+
+    </footer>
+
+</body>
+  </html>
