@@ -1,6 +1,9 @@
 import os
 import uuid
 import subprocess
+from urllib.parse import urlparse
+
+import requests
 
 from flask import (
     Flask,
@@ -13,7 +16,10 @@ from flask import (
 )
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "clipverse-secret-key")
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "clipverse-secret-key"
+)
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -27,15 +33,14 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["OUTPUT_FOLDER"] = OUTPUT_FOLDER
 
 
-# Supported video resolutions
 RESOLUTIONS = {
     "8K": "7680:-2",
     "6K": "6144:-2",
     "5K": "5120:-2",
     "4K": "3840:-2",
-    "2160p": "3840:-2",
     "3K": "2880:-2",
     "2K": "2560:-2",
+    "2160p": "3840:-2",
     "1440p": "2560:-2",
     "1080p": "1920:-2",
     "720p": "1280:-2",
@@ -46,176 +51,62 @@ RESOLUTIONS = {
 }
 
 
-@app.route("/")
-def home():
-    return render_template("index.html")
+ALLOWED_EXTENSIONS = {
+    ".mp4",
+    ".webm",
+    ".mov",
+    ".mkv",
+    ".avi",
+    ".m4v",
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".aac",
+    ".ogg",
+}
 
 
-@app.route("/convert", methods=["POST"])
-def convert():
-
-    if "file" not in request.files:
-        flash("Please select a media file.", "error")
-        return redirect(url_for("home"))
-
-    file = request.files["file"]
-
-    if file.filename == "":
-        flash("Please select a media file.", "error")
-        return redirect(url_for("home"))
-
-    output_format = request.form.get("format", "mp4").lower()
-    quality = request.form.get("quality", "1080p")
-
-    # Create safe unique filenames
-    unique_id = str(uuid.uuid4())
-
-    original_name = file.filename
-
-    # Get original extension
-    extension = os.path.splitext(original_name)[1]
-
-    if not extension:
-        extension = ".mp4"
-
-    input_filename = unique_id + extension
-    input_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        input_filename
-    )
-
-    file.save(input_path)
-
+def get_extension_from_url(media_url):
     try:
+        path = urlparse(media_url).path
+        extension = os.path.splitext(path)[1].lower()
 
-        if output_format == "mp3":
+        if extension in ALLOWED_EXTENSIONS:
+            return extension
 
-            output_filename = unique_id + ".mp3"
+    except Exception:
+        pass
 
-            output_path = os.path.join(
-                app.config["OUTPUT_FOLDER"],
-                output_filename
-            )
+    return ".mp4"
 
-            command = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                input_path,
-                "-vn",
-                "-codec:a",
-                "libmp3lame",
-                "-q:a",
-                "2",
-                output_path
-            ]
 
-        else:
+def download_media(media_url, destination):
 
-            output_filename = unique_id + ".mp4"
-
-            output_path = os.path.join(
-                app.config["OUTPUT_FOLDER"],
-                output_filename
-            )
-
-            resolution = RESOLUTIONS.get(
-                quality,
-                "1920:-2"
-            )
-
-            command = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                input_path,
-                "-vf",
-                f"scale={resolution}",
-                "-c:v",
-                "libx264",
-                "-preset",
-                "medium",
-                "-crf",
-                "23",
-                "-c:a",
-                "aac",
-                "-b:a",
-                "192k",
-                output_path
-            ]
-
-        # Run FFmpeg
-        subprocess.run(
-            command,
-            check=True,
-            capture_output=True,
-            text=True
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 "
+            "(Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 "
+            "Chrome/131 Safari/537.36"
         )
+    }
 
-    except subprocess.CalledProcessError as error:
-
-        print("FFmpeg error:", error.stderr)
-
-        flash(
-            "Conversion failed. Please try another media file.",
-            "error"
-        )
-
-        return redirect(url_for("home"))
-
-    finally:
-
-        # Remove uploaded original file
-        if os.path.exists(input_path):
-            try:
-                os.remove(input_path)
-            except OSError:
-                pass
-
-    return render_template(
-        "result.html",
-        filename=output_filename,
-        original_name=original_name,
-        output_format=output_format.upper(),
-        quality=quality
+    response = requests.get(
+        media_url,
+        headers=headers,
+        stream=True,
+        timeout=30,
+        allow_redirects=True,
     )
 
+    response.raise_for_status()
 
-@app.route("/download/<filename>")
-def download(filename):
+    content_type = response.headers.get(
+        "Content-Type",
+        ""
+    ).lower()
 
-    return send_from_directory(
-        app.config["OUTPUT_FOLDER"],
-        filename,
-        as_attachment=True
-    )
-
-
-@app.route("/delete/<filename>")
-def delete_file(filename):
-
-    file_path = os.path.join(
-        app.config["OUTPUT_FOLDER"],
-        filename
-    )
-
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-        except OSError:
-            pass
-
-    flash("File deleted from the server.", "success")
-
-    return redirect(url_for("home"))
-
-
-if __name__ == "__main__":
-
-    port = int(os.environ.get("PORT", 5000))
-
-    app.run(
-        host="0.0.0.0",
-        port=port,
-        debug=False
-            )
+    if (
+        not content_type.startswith("video/")
+        and not content_type.startswith("audio/")
+        and "oct
