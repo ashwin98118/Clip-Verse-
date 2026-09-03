@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>ClipVerse — Free Media Downloader</title>
+    <title>ClipVerse — Free Video & Audio Downloader</title>
 
     <meta name="description"
-          content="ClipVerse is a fast and simple media downloader and converter.">
+          content="ClipVerse is a free media downloader and converter. Paste an authorized media URL, choose MP4 or MP3, select quality, and download.">
+
+    <meta name="robots" content="index, follow">
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}">
@@ -17,62 +19,59 @@
 
 <div class="background"></div>
 
+<!-- NAVBAR -->
 <nav class="navbar">
 
-    <a href="/" class="logo">
+    <a href="{{ url_for('home') }}" class="logo">
         <div class="logo-icon">▶</div>
-        <span>Clip<span>Verse</span></span>
+        <span>ClipVerse</span>
     </a>
 
     <div class="nav-links">
-        <a href="#home">Home</a>
+        <a href="#supported">Supported</a>
+        <a href="#features">Features</a>
         <a href="#how-it-works">How It Works</a>
-        <a href="#supported">Supported Sites</a>
-        <a href="#faq">FAQ</a>
     </div>
-
-    <button class="menu-button" type="button">☰</button>
 
 </nav>
 
 
-<main id="home">
+<!-- MAIN -->
+<main>
 
     <!-- HERO -->
-
     <section class="hero">
 
-        <div class="badge">
-            ⚡ Fast & Free Media Downloader
+        <div class="hero-badge">
+            ✨ FREE • FAST • SIMPLE
         </div>
 
         <h1>
-            Download Videos
-            <br>
-            <span>from Any Platform</span>
+            Download Videos<br>
+            <span>From Any Platform</span>
         </h1>
 
-        <p class="hero-text">
-            Paste your media link below and choose your preferred
-            format and quality.
+        <p class="hero-description">
+            Paste your authorized media URL, choose your format and quality,
+            and download your file with ClipVerse.
         </p>
 
 
-        <!-- URL FORM -->
-
+        <!-- DOWNLOAD FORM -->
         <form class="download-form"
               action="{{ url_for('convert') }}"
               method="POST">
 
+            <!-- URL INPUT -->
             <div class="url-box">
 
-                <span class="link-icon">🔗</span>
+                <span class="url-icon">🔗</span>
 
                 <input
                     type="url"
                     name="url"
                     id="url"
-                    placeholder="Paste video URL here..."
+                    placeholder="Paste media URL here..."
                     autocomplete="off"
                     required
                 >
@@ -87,166 +86,360 @@
             </div>
 
 
-            <button type="submit" class="download-button">
-                ⬇ Download
+            <!-- OPTIONS -->
+            <div class="download-options">
+
+                <!-- FORMAT -->
+                <div class="option-group">
+
+                    <label class="option-label">
+                        Format
+                    </label>
+
+                    <div class="format-options">
+
+                        <label class="format-card active">
+
+                            <input
+                                type="radio"
+                                name="format"
+                                value="mp4"
+                                checked
+                            >
+
+                            <div class="format-icon">
+                                🎬
+                            </div>
+
+                            <div>
+                                <strong>MP4</strong>
+                                <small>Video</small>
+                            </div>
+
+                        </label>
+
+
+                        <label class="format-card">
+
+                            <input
+                                type="radio"
+                                name="format"
+                                value="mp3"
+                            >
+
+                            <div class="format-icon">
+                                🎵
+                            </div>
+
+                            <div>
+                                <strong>MP3</strong>
+                                <small>Audio</small>
+                            </div>
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUALITY -->
+                <div class="option-group">
+
+                    <label
+                        class="option-label"
+                        for="quality">
+                        Video Quality
+                    </label>
+
+                    <select
+                        name="quality"
+                        id="quality"
+                        class="quality-select">
+
+                        <option value="8K">8K</option>
+                        <option value="6K">6K</option>
+                        <option value="5K">5K</option>
+                        <option value="4K">4K</option>
+                        <option value="3K">3K</option>
+                        <option value="2K">2K</option>
+                        <option value="2160p">2160p</option>
+                        <option value="1440p">1440p</option>
+                        <option value="1080p" selected>1080p — Full HD</option>
+                        <option value="720p">720p — HD</option>
+                        <option value="480p">480p</option>
+                        <option value="360p">360p</option>
+                        <option value="240p">240p</option>
+                        <option value="144p">144p</option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <!-- DOWNLOAD BUTTON -->
+            <button
+                type="submit"
+                class="download-button"
+                id="downloadButton">
+
+                <span>⬇</span>
+                Download
+
             </button>
+
+
+            <p class="form-note">
+                🔒 Use only media you own or have permission to download.
+            </p>
 
         </form>
 
 
-        <div class="security-note">
-            🔒 Your URL is processed securely.
+        <!-- TRUST -->
+        <div class="trust-row">
+
+            <span>✓ No sign-up</span>
+            <span>✓ Free to use</span>
+            <span>✓ MP4 & MP3</span>
+            <span>✓ Up to 8K</span>
+
         </div>
 
     </section>
 
 
-    <!-- SUPPORTED SITES -->
 
-    <section class="supported" id="supported">
+    <!-- SUPPORTED PLATFORMS -->
+    <section
+        class="section"
+        id="supported">
 
-        <div class="platform">
-            <div class="platform-icon youtube">▶</div>
-            <span>YouTube</span>
+        <div class="section-heading">
+
+            <span class="section-tag">
+                SUPPORTED
+            </span>
+
+            <h2>
+                Your Favorite Platforms
+            </h2>
+
+            <p>
+                ClipVerse can process supported direct media URLs.
+            </p>
+
         </div>
 
-        <div class="platform">
-            <div class="platform-icon instagram">◎</div>
-            <span>Instagram</span>
-        </div>
 
-        <div class="platform">
-            <div class="platform-icon tiktok">♪</div>
-            <span>TikTok</span>
-        </div>
+        <div class="platform-grid">
 
-        <div class="platform">
-            <div class="platform-icon facebook">f</div>
-            <span>Facebook</span>
-        </div>
-
-        <div class="platform">
-            <div class="platform-icon x">𝕏</div>
-            <span>X</span>
-        </div>
-
-        <div class="platform">
-            <div class="platform-icon vimeo">v</div>
-            <span>Vimeo</span>
-        </div>
-
-        <div class="platform">
-            <div class="platform-icon daily">d</div>
-            <span>Dailymotion</span>
-        </div>
-
-        <div class="platform">
-            <div class="platform-icon pinterest">P</div>
-            <span>Pinterest</span>
-        </div>
-
-    </section>
-
-
-    <!-- FORMAT CARDS -->
-
-    <section class="formats">
-
-        <div class="format-card">
-
-            <div class="format-icon video-icon">
-                🎥
+            <div class="platform-card">
+                <div class="platform-icon">▶</div>
+                <span>YouTube</span>
             </div>
 
-            <div>
-                <h3>MP4</h3>
+            <div class="platform-card">
+                <div class="platform-icon">◎</div>
+                <span>Instagram</span>
+            </div>
+
+            <div class="platform-card">
+                <div class="platform-icon">♪</div>
+                <span>TikTok</span>
+            </div>
+
+            <div class="platform-card">
+                <div class="platform-icon">f</div>
+                <span>Facebook</span>
+            </div>
+
+            <div class="platform-card">
+                <div class="platform-icon">𝕏</div>
+                <span>X</span>
+            </div>
+
+            <div class="platform-card">
+                <div class="platform-icon">▶</div>
+                <span>Vimeo</span>
+            </div>
+
+            <div class="platform-card">
+                <div class="platform-icon">▶</div>
+                <span>Dailymotion</span>
+            </div>
+
+            <div class="platform-card">
+                <div class="platform-icon">P</div>
+                <span>Pinterest</span>
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- FORMATS -->
+    <section class="section">
+
+        <div class="section-heading">
+
+            <span class="section-tag">
+                FORMATS
+            </span>
+
+            <h2>
+                Download Your Way
+            </h2>
+
+        </div>
+
+
+        <div class="format-info-grid">
+
+            <div class="info-card">
+
+                <div class="large-icon">
+                    🎬
+                </div>
+
+                <h3>
+                    MP4 Video
+                </h3>
+
                 <p>
-                    High-quality video from
-                    144p up to 8K.
+                    Convert your authorized video media
+                    into high-quality MP4.
                 </p>
+
+                <div class="quality-pills">
+
+                    <span>8K</span>
+                    <span>4K</span>
+                    <span>2K</span>
+                    <span>1080p</span>
+                    <span>720p</span>
+
+                </div>
+
             </div>
 
-        </div>
 
+            <div class="info-card">
 
-        <div class="format-card">
+                <div class="large-icon">
+                    🎵
+                </div>
 
-            <div class="format-icon audio-icon">
-                🎵
-            </div>
+                <h3>
+                    MP3 Audio
+                </h3>
 
-            <div>
-                <h3>MP3</h3>
                 <p>
-                    Extract audio from
-                    your authorized media.
+                    Extract audio from supported media
+                    and save it as MP3.
                 </p>
+
+                <div class="quality-pills">
+
+                    <span>MP3</span>
+                    <span>High Quality</span>
+                    <span>Fast</span>
+
+                </div>
+
             </div>
 
         </div>
 
     </section>
+
 
 
     <!-- HOW IT WORKS -->
+    <section
+        class="section"
+        id="how-it-works">
 
-    <section class="how-it-works" id="how-it-works">
+        <div class="section-heading">
 
-        <h2>
-            How <span>ClipVerse</span> Works?
-        </h2>
+            <span class="section-tag">
+                SIMPLE PROCESS
+            </span>
 
-        <div class="steps">
+            <h2>
+                How It Works
+            </h2>
 
-            <div class="step">
+        </div>
 
-                <div class="step-number">1</div>
 
-                <div class="step-icon">🔗</div>
+        <div class="steps-grid">
 
-                <h3>Paste URL</h3>
+            <div class="step-card">
+
+                <div class="step-number">
+                    01
+                </div>
+
+                <div class="step-icon">
+                    🔗
+                </div>
+
+                <h3>
+                    Paste URL
+                </h3>
 
                 <p>
-                    Copy and paste your
-                    media link above.
+                    Copy your authorized media URL
+                    and paste it into ClipVerse.
                 </p>
 
             </div>
 
 
-            <div class="arrow">→</div>
+            <div class="step-card">
 
+                <div class="step-number">
+                    02
+                </div>
 
-            <div class="step">
+                <div class="step-icon">
+                    ⚙️
+                </div>
 
-                <div class="step-number">2</div>
-
-                <div class="step-icon">⚙️</div>
-
-                <h3>Select Format</h3>
+                <h3>
+                    Choose Options
+                </h3>
 
                 <p>
-                    Choose MP4 or MP3
-                    and your quality.
+                    Select MP4 or MP3 and choose
+                    your preferred video quality.
                 </p>
 
             </div>
 
 
-            <div class="arrow">→</div>
+            <div class="step-card">
 
+                <div class="step-number">
+                    03
+                </div>
 
-            <div class="step">
+                <div class="step-icon">
+                    ⬇️
+                </div>
 
-                <div class="step-number">3</div>
-
-                <div class="step-icon">⬇</div>
-
-                <h3>Download</h3>
+                <h3>
+                    Download
+                </h3>
 
                 <p>
-                    Download your
-                    converted media.
+                    ClipVerse processes the media
+                    and gives you the download.
                 </p>
 
             </div>
@@ -256,11 +449,26 @@
     </section>
 
 
+
     <!-- QUALITY -->
+    <section class="section">
 
-    <section class="quality-section">
+        <div class="section-heading">
 
-        <h2>Available Video Quality</h2>
+            <span class="section-tag">
+                QUALITY
+            </span>
+
+            <h2>
+                From 8K to 144p
+            </h2>
+
+            <p>
+                Choose the resolution that works best for you.
+            </p>
+
+        </div>
+
 
         <div class="quality-list">
 
@@ -284,32 +492,98 @@
     </section>
 
 
+
     <!-- FEATURES -->
+    <section
+        class="section"
+        id="features">
 
-    <section class="features">
+        <div class="section-heading">
 
-        <div class="feature">
-            <div class="feature-icon">⚡</div>
-            <h3>Fast Downloads</h3>
-            <p>Simple and efficient media processing.</p>
+            <span class="section-tag">
+                FEATURES
+            </span>
+
+            <h2>
+                Why ClipVerse?
+            </h2>
+
         </div>
 
-        <div class="feature">
-            <div class="feature-icon">🛡</div>
-            <h3>No Sign-up</h3>
-            <p>No account or registration required.</p>
-        </div>
 
-        <div class="feature">
-            <div class="feature-icon">📱</div>
-            <h3>All Devices</h3>
-            <p>Designed for phones, tablets and computers.</p>
-        </div>
+        <div class="features-grid">
 
-        <div class="feature">
-            <div class="feature-icon">🔐</div>
-            <h3>Privacy</h3>
-            <p>Your media is processed securely.</p>
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    ⚡
+                </div>
+
+                <h3>
+                    Fast Processing
+                </h3>
+
+                <p>
+                    Simple and efficient media
+                    conversion workflow.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    🆓
+                </div>
+
+                <h3>
+                    Completely Free
+                </h3>
+
+                <p>
+                    No subscription and no
+                    account required.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    🎯
+                </div>
+
+                <h3>
+                    Quality Options
+                </h3>
+
+                <p>
+                    Choose from 8K down to
+                    144p for video conversion.
+                </p>
+
+            </div>
+
+
+            <div class="feature-card">
+
+                <div class="feature-icon">
+                    📱
+                </div>
+
+                <h3>
+                    Mobile Friendly
+                </h3>
+
+                <p>
+                    Designed to work smoothly
+                    on phones, tablets and computers.
+                </p>
+
+            </div>
+
         </div>
 
     </section>
@@ -317,42 +591,171 @@
 </main>
 
 
-<footer id="faq">
+
+<!-- FOOTER -->
+<footer>
 
     <div class="footer-logo">
-        ▶ ClipVerse
+        <span class="logo-icon">▶</span>
+        ClipVerse
     </div>
 
     <p>
         © 2026 ClipVerse. Free media conversion.
     </p>
 
+    <p class="footer-note">
+        Use ClipVerse only for media you own
+        or have permission to download.
+    </p>
+
 </footer>
 
 
+
+<!-- JAVASCRIPT -->
 <script>
 
+const urlInput =
+    document.getElementById("url");
+
+const downloadForm =
+    document.querySelector(".download-form");
+
+const downloadButton =
+    document.getElementById("downloadButton");
+
+const qualitySelect =
+    document.getElementById("quality");
+
+const formatInputs =
+    document.querySelectorAll(
+        'input[name="format"]'
+    );
+
+const formatCards =
+    document.querySelectorAll(
+        ".format-card"
+    );
+
+
+// PASTE BUTTON
 async function pasteURL() {
 
-    const input = document.getElementById("url");
+    if (!urlInput) {
+        return;
+    }
 
     try {
 
-        const text = await navigator.clipboard.readText();
+        const text =
+            await navigator.clipboard.readText();
 
-        input.value = text;
+        if (text) {
 
-        input.focus();
+            urlInput.value = text;
+
+            urlInput.focus();
+
+        }
 
     } catch (error) {
 
-        input.focus();
+        urlInput.focus();
 
     }
+
+}
+
+
+// FORMAT CARD SELECTION
+formatInputs.forEach(
+    function(input, index) {
+
+        input.addEventListener(
+            "change",
+            function() {
+
+                formatCards.forEach(
+                    function(card) {
+
+                        card.classList.remove(
+                            "active"
+                        );
+
+                    }
+                );
+
+                if (formatCards[index]) {
+
+                    formatCards[index]
+                        .classList.add("active");
+
+                }
+
+                // Quality is only relevant to MP4.
+                if (qualitySelect) {
+
+                    if (input.value === "mp3") {
+
+                        qualitySelect.disabled =
+                            true;
+
+                    } else {
+
+                        qualitySelect.disabled =
+                            false;
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+);
+
+
+// FORM SUBMIT
+if (downloadForm) {
+
+    downloadForm.addEventListener(
+        "submit",
+        function(event) {
+
+            if (
+                !urlInput ||
+                !urlInput.value.trim()
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please paste a media URL first."
+                );
+
+                return;
+
+            }
+
+
+            if (downloadButton) {
+
+                downloadButton.disabled =
+                    true;
+
+                downloadButton.innerHTML =
+                    "⏳ Processing...";
+
+            }
+
+        }
+    );
 
 }
 
 </script>
 
 </body>
-                </html>
+    </html>
