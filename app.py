@@ -1,9 +1,8 @@
 import os
 import uuid
 import subprocess
+import shutil
 from urllib.parse import urlparse
-
-import requests
 
 from flask import (
     Flask,
@@ -17,7 +16,7 @@ from flask import (
 
 
 # =========================================================
-# APP CONFIGURATION
+# CLIPVERSE APP
 # =========================================================
 
 app = Flask(__name__)
@@ -31,19 +30,14 @@ BASE_DIR = os.path.abspath(
     os.path.dirname(__file__)
 )
 
-UPLOAD_FOLDER = os.path.join(
-    BASE_DIR,
-    "uploads"
-)
-
 OUTPUT_FOLDER = os.path.join(
     BASE_DIR,
     "outputs"
 )
 
-os.makedirs(
-    UPLOAD_FOLDER,
-    exist_ok=True
+TEMP_FOLDER = os.path.join(
+    BASE_DIR,
+    "temp"
 )
 
 os.makedirs(
@@ -51,150 +45,346 @@ os.makedirs(
     exist_ok=True
 )
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+os.makedirs(
+    TEMP_FOLDER,
+    exist_ok=True
+)
+
 app.config["OUTPUT_FOLDER"] = OUTPUT_FOLDER
+app.config["TEMP_FOLDER"] = TEMP_FOLDER
 
 
 # =========================================================
-# VIDEO QUALITY OPTIONS
+# QUALITY OPTIONS
 # =========================================================
 
 RESOLUTIONS = {
-    "8K": "7680:-2",
-    "6K": "6144:-2",
-    "5K": "5120:-2",
-    "4K": "3840:-2",
-    "3K": "2880:-2",
-    "2K": "2560:-2",
-    "2160p": "3840:-2",
-    "1440p": "2560:-2",
-    "1080p": "1920:-2",
-    "720p": "1280:-2",
-    "480p": "854:-2",
-    "360p": "640:-2",
-    "240p": "426:-2",
-    "144p": "256:-2",
+    "8K": 4320,
+    "6K": 2880,
+    "5K": 2560,
+    "4K": 2160,
+    "3K": 1620,
+    "2K": 1440,
+    "1080p": 1080,
+    "720p": 720,
+    "480p": 480,
+    "360p": 360,
+    "240p": 240,
+    "144p": 144,
 }
 
 
 # =========================================================
-# GET FILE EXTENSION FROM URL
+# ALLOWED URL CHECK
 # =========================================================
 
-def get_extension_from_url(media_url):
+def valid_url(media_url):
 
     try:
 
-        path = urlparse(
+        parsed = urlparse(
             media_url
-        ).path
+        )
 
-        extension = os.path.splitext(
-            path
-        )[1].lower()
-
-        allowed_extensions = {
-            ".mp4",
-            ".webm",
-            ".mov",
-            ".mkv",
-            ".avi",
-            ".m4v",
-            ".mp3",
-            ".wav",
-            ".m4a",
-            ".aac",
-            ".ogg",
-        }
-
-        if extension in allowed_extensions:
-            return extension
+        return (
+            parsed.scheme in ("http", "https")
+            and bool(parsed.netloc)
+        )
 
     except Exception:
-        pass
 
-    return ".mp4"
+        return False
 
 
 # =========================================================
-# DOWNLOAD DIRECT MEDIA URL
+# CHECK FFMPEG
+# =========================================================
+
+def ffmpeg_available():
+
+    return shutil.which(
+        "ffmpeg"
+    ) is not None
+
+
+# =========================================================
+# CHECK MEDIA DOWNLOADER
+# =========================================================
+
+def downloader_available():
+
+    return shutil.which(
+        "yt-dlp"
+    ) is not None
+
+
+# =========================================================
+# GET FILE INFORMATION
+# =========================================================
+
+def get_media_info(
+    media_url
+):
+
+    command = [
+        "yt-dlp",
+        "--dump-single-json",
+        "--no-playlist",
+        "--skip-download",
+        "--no-warnings",
+        "--",
+        media_url
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=60
+    )
+
+    if result.returncode != 0:
+
+        raise RuntimeError(
+            result.stderr.strip()
+            or "Unable to read this media URL."
+        )
+
+    return result.stdout
+
+
+# =========================================================
+# DOWNLOAD MEDIA
 # =========================================================
 
 def download_media(
     media_url,
-    destination
+    output_template
 ):
 
-    headers = {
-        "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 "
-        "(KHTML, like Gecko) "
-        "Chrome/120.0 Safari/537.36"
-    }
+    command = [
+        "yt-dlp",
 
-    response = requests.get(
-        media_url,
-        headers=headers,
-        stream=True,
-        timeout=60,
-        allow_redirects=True
+        "--no-playlist",
+
+        "--no-warnings",
+
+        "--restrict-filenames",
+
+        "-o",
+        output_template,
+
+        "--",
+        media_url
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=600
     )
 
-    response.raise_for_status()
+    if result.returncode != 0:
 
-    content_type = response.headers.get(
-        "Content-Type",
-        ""
-    ).lower()
-
-    # Only allow actual media responses.
-    valid_media = (
-        content_type.startswith("video/")
-        or content_type.startswith("audio/")
-        or "octet-stream" in content_type
-    )
-
-    if not valid_media:
-
-        raise ValueError(
-            "This URL does not point directly to a "
-            "video or audio file."
+        print(
+            "========================================"
         )
 
-    # Maximum input size: 500 MB
-    max_size = 500 * 1024 * 1024
+        print(
+            "YT-DLP DOWNLOAD ERROR"
+        )
 
-    total_size = 0
+        print(
+            result.stderr
+        )
 
-    with open(
-        destination,
-        "wb"
-    ) as output_file:
+        print(
+            "========================================"
+        )
 
-        for chunk in response.iter_content(
-            chunk_size=1024 * 1024
-        ):
-
-            if not chunk:
-                continue
-
-            total_size += len(chunk)
-
-            if total_size > max_size:
-
-                raise ValueError(
-                    "File is too large. "
-                    "Maximum allowed size is 500 MB."
-                )
-
-            output_file.write(
-                chunk
-            )
+        raise RuntimeError(
+            "Unable to download this media URL."
+        )
 
 
 # =========================================================
-# HOME PAGE
+# FIND DOWNLOADED FILE
+# =========================================================
+
+def find_downloaded_file(
+    folder,
+    unique_id
+):
+
+    files = os.listdir(
+        folder
+    )
+
+    matching_files = []
+
+    for filename in files:
+
+        if filename.startswith(
+            unique_id
+        ):
+
+            full_path = os.path.join(
+                folder,
+                filename
+            )
+
+            if os.path.isfile(
+                full_path
+            ):
+
+                matching_files.append(
+                    full_path
+                )
+
+    if not matching_files:
+
+        return None
+
+    return matching_files[0]
+
+
+# =========================================================
+# CONVERT TO MP3
+# =========================================================
+
+def convert_to_mp3(
+    input_file,
+    output_file
+):
+
+    command = [
+        "ffmpeg",
+
+        "-y",
+
+        "-i",
+        input_file,
+
+        "-vn",
+
+        "-codec:a",
+        "libmp3lame",
+
+        "-q:a",
+        "2",
+
+        output_file
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=600
+    )
+
+    if result.returncode != 0:
+
+        print(
+            "FFMPEG MP3 ERROR:"
+        )
+
+        print(
+            result.stderr
+        )
+
+        raise RuntimeError(
+            "MP3 conversion failed."
+        )
+
+
+# =========================================================
+# CONVERT TO MP4
+# =========================================================
+
+def convert_to_mp4(
+    input_file,
+    output_file,
+    quality
+):
+
+    height = RESOLUTIONS.get(
+        quality,
+        1080
+    )
+
+    # Let FFmpeg scale while preserving
+    # aspect ratio.
+
+    video_filter = (
+        f"scale=-2:min({height}\\,ih)"
+    )
+
+    command = [
+        "ffmpeg",
+
+        "-y",
+
+        "-i",
+        input_file,
+
+        "-vf",
+        video_filter,
+
+        "-c:v",
+        "libx264",
+
+        "-preset",
+        "medium",
+
+        "-crf",
+        "23",
+
+        "-c:a",
+        "aac",
+
+        "-b:a",
+        "192k",
+
+        "-movflags",
+        "+faststart",
+
+        output_file
+    ]
+
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=900
+    )
+
+    if result.returncode != 0:
+
+        print(
+            "========================================"
+        )
+
+        print(
+            "FFMPEG MP4 ERROR"
+        )
+
+        print(
+            result.stderr
+        )
+
+        print(
+            "========================================"
+        )
+
+        raise RuntimeError(
+            "MP4 conversion failed."
+        )
+
+
+# =========================================================
+# HOME
 # =========================================================
 
 @app.route("/")
@@ -215,10 +405,6 @@ def home():
 )
 def convert():
 
-    # -----------------------------------------------------
-    # GET FORM DATA
-    # -----------------------------------------------------
-
     media_url = request.form.get(
         "url",
         ""
@@ -236,13 +422,13 @@ def convert():
 
 
     # -----------------------------------------------------
-    # VALIDATE URL
+    # URL VALIDATION
     # -----------------------------------------------------
 
     if not media_url:
 
         flash(
-            "Please paste a media URL.",
+            "Please paste a video or media URL.",
             "error"
         )
 
@@ -251,15 +437,9 @@ def convert():
         )
 
 
-    parsed_url = urlparse(
+    if not valid_url(
         media_url
-    )
-
-
-    if parsed_url.scheme not in {
-        "http",
-        "https"
-    }:
+    ):
 
         flash(
             "Please enter a valid HTTP or HTTPS URL.",
@@ -272,13 +452,13 @@ def convert():
 
 
     # -----------------------------------------------------
-    # VALIDATE FORMAT
+    # FORMAT VALIDATION
     # -----------------------------------------------------
 
-    if output_format not in {
+    if output_format not in (
         "mp4",
         "mp3"
-    }:
+    ):
 
         flash(
             "Invalid format selected.",
@@ -291,7 +471,7 @@ def convert():
 
 
     # -----------------------------------------------------
-    # VALIDATE QUALITY
+    # QUALITY VALIDATION
     # -----------------------------------------------------
 
     if quality not in RESOLUTIONS:
@@ -300,7 +480,35 @@ def convert():
 
 
     # -----------------------------------------------------
-    # CREATE UNIQUE FILE ID
+    # CHECK DEPENDENCIES
+    # -----------------------------------------------------
+
+    if not downloader_available():
+
+        flash(
+            "Media downloader is not installed on the server.",
+            "error"
+        )
+
+        return redirect(
+            url_for("home")
+        )
+
+
+    if not ffmpeg_available():
+
+        flash(
+            "FFmpeg is not installed on the server.",
+            "error"
+        )
+
+        return redirect(
+            url_for("home")
+        )
+
+
+    # -----------------------------------------------------
+    # UNIQUE ID
     # -----------------------------------------------------
 
     unique_id = str(
@@ -308,173 +516,96 @@ def convert():
     )
 
 
-    # -----------------------------------------------------
-    # INPUT FILE
-    # -----------------------------------------------------
-
-    extension = get_extension_from_url(
-        media_url
-    )
-
-    input_filename = (
-        unique_id + extension
-    )
-
-    input_path = os.path.join(
-        app.config["UPLOAD_FOLDER"],
-        input_filename
+    input_template = os.path.join(
+        app.config["TEMP_FOLDER"],
+        unique_id + ".%(ext)s"
     )
 
 
-    # -----------------------------------------------------
-    # OUTPUT FILE
-    # -----------------------------------------------------
+    downloaded_file = None
 
-    if output_format == "mp3":
-
-        output_filename = (
-            unique_id + ".mp3"
-        )
-
-    else:
-
-        output_filename = (
-            unique_id + ".mp4"
-        )
-
-
-    output_path = os.path.join(
-        app.config["OUTPUT_FOLDER"],
-        output_filename
-    )
-
-
-    # =====================================================
-    # PROCESS
-    # =====================================================
 
     try:
 
-        # -------------------------------------------------
-        # DOWNLOAD INPUT MEDIA
-        # -------------------------------------------------
+        # =================================================
+        # DOWNLOAD SOURCE
+        # =================================================
 
         download_media(
             media_url,
-            input_path
+            input_template
         )
 
 
         # =================================================
-        # MP3 CONVERSION
+        # FIND DOWNLOADED FILE
+        # =================================================
+
+        downloaded_file = find_downloaded_file(
+            app.config["TEMP_FOLDER"],
+            unique_id
+        )
+
+
+        if not downloaded_file:
+
+            raise RuntimeError(
+                "The media file could not be found "
+                "after downloading."
+            )
+
+
+        # =================================================
+        # CREATE OUTPUT NAME
         # =================================================
 
         if output_format == "mp3":
 
-            command = [
-                "ffmpeg",
+            output_filename = (
+                unique_id + ".mp3"
+            )
 
-                "-y",
+        else:
 
-                "-i",
-                input_path,
+            output_filename = (
+                unique_id + ".mp4"
+            )
 
-                "-vn",
 
-                "-codec:a",
-                "libmp3lame",
-
-                "-q:a",
-                "2",
-
-                output_path
-            ]
+        output_path = os.path.join(
+            app.config["OUTPUT_FOLDER"],
+            output_filename
+        )
 
 
         # =================================================
-        # MP4 CONVERSION
+        # MP3
+        # =================================================
+
+        if output_format == "mp3":
+
+            convert_to_mp3(
+                downloaded_file,
+                output_path
+            )
+
+
+        # =================================================
+        # MP4
         # =================================================
 
         else:
 
-            resolution = RESOLUTIONS[
+            convert_to_mp4(
+                downloaded_file,
+                output_path,
                 quality
-            ]
-
-            command = [
-                "ffmpeg",
-
-                "-y",
-
-                "-i",
-                input_path,
-
-                "-vf",
-                "scale=" + resolution,
-
-                "-c:v",
-                "libx264",
-
-                "-preset",
-                "medium",
-
-                "-crf",
-                "23",
-
-                "-c:a",
-                "aac",
-
-                "-b:a",
-                "192k",
-
-                "-movflags",
-                "+faststart",
-
-                output_path
-            ]
-
-
-        # -------------------------------------------------
-        # RUN FFMPEG
-        # -------------------------------------------------
-
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True
-        )
-
-
-        # -------------------------------------------------
-        # CHECK FFMPEG
-        # -------------------------------------------------
-
-        if result.returncode != 0:
-
-            print(
-                "================================="
-            )
-
-            print(
-                "FFMPEG ERROR"
-            )
-
-            print(
-                result.stderr
-            )
-
-            print(
-                "================================="
-            )
-
-            raise RuntimeError(
-                "Media conversion failed."
             )
 
 
-        # -------------------------------------------------
+        # =================================================
         # CHECK OUTPUT
-        # -------------------------------------------------
+        # =================================================
 
         if not os.path.exists(
             output_path
@@ -485,16 +616,25 @@ def convert():
             )
 
 
-        # -------------------------------------------------
-        # SUCCESS PAGE
-        # -------------------------------------------------
+        if os.path.getsize(
+            output_path
+        ) == 0:
+
+            raise RuntimeError(
+                "The output file is empty."
+            )
+
+
+        # =================================================
+        # SUCCESS
+        # =================================================
 
         return render_template(
             "result.html",
 
             filename=output_filename,
 
-            original_name="Media from URL",
+            original_name="ClipVerse Media",
 
             output_format=output_format.upper(),
 
@@ -502,21 +642,11 @@ def convert():
         )
 
 
-    # =====================================================
-    # DOWNLOAD ERROR
-    # =====================================================
-
-    except requests.RequestException as error:
-
-        print(
-            "DOWNLOAD ERROR:",
-            error
-        )
+    except subprocess.TimeoutExpired:
 
         flash(
-            "Unable to download this media URL. "
-            "Make sure it is a direct media URL "
-            "that you are authorized to download.",
+            "The conversion took too long. "
+            "Please try a shorter video.",
             "error"
         )
 
@@ -524,20 +654,29 @@ def convert():
             url_for("home")
         )
 
-
-    # =====================================================
-    # GENERAL ERROR
-    # =====================================================
 
     except Exception as error:
 
         print(
-            "CONVERSION ERROR:",
-            error
+            "========================================"
+        )
+
+        print(
+            "CLIPVERSE ERROR:"
+        )
+
+        print(
+            str(error)
+        )
+
+        print(
+            "========================================"
         )
 
         flash(
-            str(error),
+            "Unable to process this URL. "
+            "Make sure the media is publicly accessible "
+            "and that you are authorized to download it.",
             "error"
         )
 
@@ -546,21 +685,23 @@ def convert():
         )
 
 
-    # =====================================================
-    # CLEAN TEMPORARY INPUT
-    # =====================================================
-
     finally:
 
-        if os.path.exists(
-            input_path
-        ):
+        # -------------------------------------------------
+        # DELETE TEMPORARY DOWNLOADED SOURCE
+        # -------------------------------------------------
+
+        if downloaded_file:
 
             try:
 
-                os.remove(
-                    input_path
-                )
+                if os.path.exists(
+                    downloaded_file
+                ):
+
+                    os.remove(
+                        downloaded_file
+                    )
 
             except OSError:
 
@@ -568,7 +709,7 @@ def convert():
 
 
 # =========================================================
-# DOWNLOAD GENERATED FILE
+# DOWNLOAD RESULT
 # =========================================================
 
 @app.route(
@@ -584,7 +725,7 @@ def download(filename):
 
 
 # =========================================================
-# DELETE GENERATED FILE
+# DELETE RESULT
 # =========================================================
 
 @app.route(
@@ -606,7 +747,6 @@ def delete_file(filename):
 
             os.remove(
                 file_path
-
             )
 
         except OSError:
@@ -637,7 +777,7 @@ def health():
 
 
 # =========================================================
-# RUN APPLICATION
+# SERVER START
 # =========================================================
 
 if __name__ == "__main__":
@@ -653,4 +793,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         debug=False
-        )
+    )
